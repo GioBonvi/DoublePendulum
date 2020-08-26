@@ -15,18 +15,21 @@ EXEC_FILES = $(addprefix $(BIN_DIR)/, $(EXEC_NAMES))
 # Source files, grouped by function.
 CPP_DOUBLEPEND = $(wildcard $(SRC_DIR)/DoublePendulum/*.cpp)
 CPP_ADAPTCALC = $(wildcard $(SRC_DIR)/AdaptiveCalculation/*.cpp)
-CPP_ALL = $(CPP_DOUBLEPEND) $(CPP_ADAPTCALC)
+CPP_FRACTAL = $(wildcard $(SRC_DIR)/Fractal/*.cpp)
+CPP_ALL = $(CPP_DOUBLEPEND) $(CPP_ADAPTCALC) $(CPP_FRACTAL)
 # Object files.
 OBJ_DOUBLEPEND = $(CPP_DOUBLEPEND:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 OBJ_ADAPTCALC = $(CPP_ADAPTCALC:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+OBJ_FRACTAL = $(CPP_FRACTAL:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 OBJ_EXEC = $(EXEC_NAMES:%=$(BUILD_DIR)/%.o)
-OBJ_ALL = $(OBJ_DOUBLEPEND) $(OBJ_ADAPTCALC) $(OBJ_EXEC)
+OBJ_ALL = $(OBJ_DOUBLEPEND) $(OBJ_ADAPTCALC) $(OBJ_FRACTAL) $(OBJ_EXEC)
 # Prevent make from removing object files as intermediate files.
 .PRECIOUS: $(OBJ_ALL)
 # Dependency files.
 DEP_DOUBLEPEND = $(OBJ_DOUBLEPEND:%.o=%.d)
 DEP_ADAPTCALC = $(OBJ_ADAPTCALC:%.o=%.d)
-DEP_ALL = $(DEP_DOUBLEPEND) $(DEP_ADAPTCALC)
+DEP_FRACTAL = $(OBJ_FRACTAL:%.o=%.d)
+DEP_ALL = $(DEP_DOUBLEPEND) $(DEP_ADAPTCALC) $(DEP_FRACTAL)
 
 .PHONY: all
 all: $(EXEC_FILES)
@@ -37,12 +40,12 @@ $(BIN_DIR)/timehistory : $(BIN_DIR)/% : $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND)
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-$(BIN_DIR)/fractalGen : $(BIN_DIR)/% : $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND)
+$(BIN_DIR)/fractalGen : $(BIN_DIR)/% : $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND) $(OBJ_ADAPTCALC) $(OBJ_FRACTAL)
 # Ensure directory strucutre is preserved.
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-$(BIN_DIR)/fractalGenAdaptive : $(BIN_DIR)/%: $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND) $(OBJ_ADAPTCALC)
+$(BIN_DIR)/fractalGenAdaptive : $(BIN_DIR)/%: $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND) $(OBJ_ADAPTCALC) $(OBJ_FRACTAL)
 # Ensure directory strucutre is preserved.
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $^ -o $@

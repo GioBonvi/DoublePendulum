@@ -1,81 +1,11 @@
-#define _USE_MATH_DEFINES
-#include <cmath>
-#include <fstream>
+#include <string>
 #include <iostream>
 #include <memory>
-#include <chrono>
-#include <set>
-#include <array>
 #include "DoublePendulum/DoublePendulum.hpp"
-#include "DoublePendulum/SimpleDoublePendulum.hpp"
-#include "DoublePendulum/CompoundDoublePendulum.hpp"
-#include "AdaptiveCalculation/DataRegion.hpp"
+#include "Fractal/Fractal.hpp"
+#include "Fractal/AdaptiveGrid.hpp"
 
 const double g = 9.81;
-
-/**
- * Custom comparator to compare pointers of any type.
- * 
- * Note: the type must be comparable itself.
- */
-class ComparePointers {
-    public:
-        template<typename T>
-        bool operator()(T *a, T *b) {
-            return (*a) < (*b);
-        }
-};
-
-/*
- * Detect wether one of the two rods flipped between the two given states.
- * 
- * A rod flips when it passes through the vertical upwards (alpha = +/- pi) clockwise
- * or anticlockwise.
- * This can be detected by counting the number of complete circles made by each rod:
- * if it differs between the two states then the rod flipped between those states.
- */
-bool detectFlip(StateVector prevState, StateVector currState) {
-    // The offset by PI is to start counting rounds at the top (at an agle of PI radians
-    // in the global reference system) instead of at the bottom (0 radians).
-    float nRoundsRod1PrevState = floor((prevState.a1 - M_PI) / (2 * M_PI));
-    float nRoundsRod1CurrState = floor((currState.a1 - M_PI) / (2 * M_PI));
-    float nRoundsRod2PrevState = floor((prevState.a2 - M_PI) / (2 * M_PI));
-    float nRoundsRod2CurrState = floor((currState.a2 - M_PI) / (2 * M_PI));
-
-    return (nRoundsRod1PrevState != nRoundsRod1CurrState) || (nRoundsRod2PrevState != nRoundsRod2CurrState);
-}
-
-int stepsToFlip(double ai1, double ai2, std::unique_ptr<DoublePendulum> &pendulum, int nStepMax) {
-    int count;
-    StateVector currState, nextState;
-    
-    // Initial state.
-    currState.a1 = ai1;
-    currState.w1 = 0;
-    currState.a2 = ai2;
-    currState.w2 = 0;
-
-    // If this condition is not met then it is physically impossible for any rod to flip.
-    // See: http://csaapt.org/uploads/3/4/4/2/34425343/csaapt_maypalace_sp16.pdf
-    if (3 * pendulum->L1 * cos(currState[0]) + pendulum->L2 * cos(currState[2]) > 2) {
-        return nStepMax - 1;
-    }
-
-    // Numerically solve the state equation using the Runge-Kutta method.
-    for (count = 0; count < nStepMax; count++) {
-        nextState = pendulum->calcNextState(currState);
-
-        // Check if a flip happened between the last two states.
-        if (count > 1 && detectFlip(currState, nextState)) {
-            return count;
-        }
-
-        // Update the current state.
-        currState = nextState;
-    }
-
-    return nStepMax - 1;
-}
 
 void printHelpMessage() {
     std::cout << "Usage:" << std::endl << std::endl;
@@ -90,18 +20,17 @@ void printHelpMessage() {
     std::cout << "\tdt:            time step of the simulation in [s]." << std::endl;
     std::cout << "\tnStepMax:      maximum number of steps for each simulation." << std::endl;
     std::cout << "\tnCycles:       number of cycles (increasing resolution of a region) to run." << std::endl;
-    std::cout << "\tnCyclesPrint:  number of cycles after which a file with the partial data is printed. Defaults to -1 (never)." << std::endl << std::endl;
+    std::cout << "\tnCyclesPrint:  number of cycles after which a file with the partial data is printed. Defaults to 0 (never)." << std::endl << std::endl;
 }
 
 int main(int argc, const char * argv[])
 {
-    std::string outFileName, systemType;
+    std::string outFileName, pendulumTypeStr;
+    DoublePendulum::Variant pendulumType;
     double M1, M2, L1, L2;
     double ai1Central, ai2Central, aiSize;
     double dt;
     int nStepMax, nCycles, nCyclesPrint;
-    bool simplePendulum;
-    std::unique_ptr<DoublePendulum> pendulum;
 
     // PARAMETERS.
 
@@ -119,11 +48,11 @@ int main(int argc, const char * argv[])
         return 1;
     }
     // Physical system parameters.
-    systemType = argv[2];
-    if (systemType == "simple") {
-        simplePendulum = true;
-    } else if (systemType == "compound") {
-        simplePendulum = false;
+    pendulumTypeStr = std::string(argv[2]);
+    if (pendulumTypeStr == "simple") {
+        pendulumType = DoublePendulum::Variant::Simple;
+    } else if (pendulumTypeStr == "compound") {
+        pendulumType = DoublePendulum::Variant::Compound;
     } else {
         std::cerr << "Invalid type parameter!" << std::endl << std::endl;
         printHelpMessage();
@@ -145,79 +74,30 @@ int main(int argc, const char * argv[])
     if (argc == 14) {
         nCyclesPrint = std::stoi(argv[13]);
     } else {
-        nCyclesPrint = -1;
+        nCyclesPrint = 0;
     }
 
-    // SETUP
+    std::shared_ptr<Fractal> fractal = std::make_shared<Fractal> (
+        DoublePendulum::makeDoublePendulum(M1, M2, L1, L2, dt, g, pendulumType)
+    );
+    AdaptiveGrid grid(fractal, nStepMax, ai1Central, ai2Central, aiSize);
 
-    auto chronoStart = std::chrono::high_resolution_clock::now();
-    
-    std::ofstream outFile(outFileName);
-
-    // Write simulation parameters in the header.
-    outFile << "#M1\tM2\tL1\tL2\ttype\tai1Central\tai2Central\taiSize\tdt\tnStepMax\tnCycles\n";
-    outFile << "#" << M1 << "\t" << M2 << "\t" << L1 << "\t" << L2 << "\t" << systemType << "\t" << ai1Central << "\t" << ai2Central << "\t" << aiSize << "\t" << dt<< "\t" << nStepMax << "\t" << nCycles << "\n";
-    outFile << "#RENDER_TYPE:ADAPTIVE" << std::endl;
-
-    // Choose the pendulum type and initialize the variable.
-    if (simplePendulum) {
-        pendulum = std::make_unique<SimpleDoublePendulum>(M1, M2, L1, L2, dt, g);
+    if (nCyclesPrint > 0) {
+        int cycles = 0;
+        // Perform the calculations in batches of nCyclesPrint each...
+        while (nCycles - cycles > nCyclesPrint) {
+            grid.cycle(nCyclesPrint);
+            cycles += nCyclesPrint;
+            // ... print the intermediate restults...
+            grid.printDataToFile(outFileName);
+        }
+        // ... perform the last calculations and print the final results.
+        grid.cycle(nCycles - cycles);
+        grid.printDataToFile(outFileName);
     } else {
-        pendulum = std::make_unique<CompoundDoublePendulum>(M1, M2, L1, L2, dt, g);
+        // Perform all the calculations...
+        grid.cycle(nCycles);
+        // ... then print the final result.
+        grid.printDataToFile(outFileName);
     }
-
-    // CALCULATIONS
-
-    // Multiset keeps the regions ordered by priority value, so
-    // std::prev(regions.end()) always is the region with highest priority.
-    // Note: a custom comparator is adopted to compare pointers.
-    std::multiset<DataRegion*, ComparePointers> regions;
-    std::array<DataRegion*, DataRegion::DATA_POINTS_N> newRegions;
-
-    // The first region covers the whole domanin: subregions will be defined
-    // automatically around the most "interesting" areas.
-    regions.insert(new DataRegion(
-        ai1Central,
-        ai2Central,
-        aiSize,
-        aiSize,
-        // Lambda expression to fit the f(x, y) format required by DataRegion.
-        [&pendulum, nStepMax](double x, double y) -> int {
-            return stepsToFlip(x, y, pendulum, nStepMax);
-        }
-    ));
-
-    // Each cycle splits the region with highest priority in N new regions.
-    for (int i = 0; i < nCycles; i++) {
-        // Define the new regions.
-        newRegions = (*std::prev(regions.end()))->getSubRegions();
-        // Delete the old region.
-        delete *std::prev(regions.end());
-        regions.erase(std::prev(regions.end()));
-        // Insert the new regions.
-        for(auto newRegion = std::begin(newRegions); newRegion != std::end(newRegions); ++newRegion) {
-            regions.insert(*newRegion);
-        }
-        // Every n cycles print the partial data collected up to now.
-        // This can be used to leave the program running for an indefinite
-        // amount of time and extract the results without having to interrupt it.
-        if (nCyclesPrint >= 0 && i % nCyclesPrint == 0 && i > 0) {
-            for(auto region = std::begin(regions); region != std::end(regions); ++region) {
-                outFile << (*region)->getTextOutput();
-            }
-        }
-    }
-
-    // OUTPUT
-
-    // Output the final data and clear the memory.
-    for(auto region = std::begin(regions); region != std::end(regions); ++region) {
-        outFile << (*region)->getTextOutput();
-        delete *region;
-    }
-    regions.clear();
-
-    auto chronoStop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(chronoStop - chronoStart);
-    outFile << "# Elapsed time: " << duration.count() << " s";
 }
