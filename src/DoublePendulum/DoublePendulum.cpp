@@ -1,23 +1,37 @@
 #include <cmath>
 #include <string>
-#include <iostream>
 #include <sstream>
+#include <memory>
 #include "StateVector.hpp"
 #include "DoublePendulum.hpp"
+#include "SimpleDoublePendulum.hpp"
+#include "CompoundDoublePendulum.hpp"
 
-DoublePendulum::DoublePendulum(double M1, double M2, double L1, double L2, double dt, double g) {
-    // System parameters.
-    this->M1 = M1;
-    this->M2 = M2;
-    this->L1 = L1;
-    this->L2 = L2;
+DoublePendulum::DoublePendulum(double M1, double M2, double L1, double L2, double dt, double g, Variant variant) :
+    M1{M1}, M2{M2}, L1{L1}, L2{L2}, variant{variant}, dt{dt}, g{g} {};
 
-    // Environment paramenters.
-    this->dt = dt;
-    this->g = g;
+std::unique_ptr<DoublePendulum> DoublePendulum::makeDoublePendulum(double M1, double M2, double L1, double L2,
+        double dt, double g, DoublePendulum::Variant type) {
+    switch (type) {
+        case DoublePendulum::Variant::Simple:
+            return std::make_unique<SimpleDoublePendulum>(M1, M2, L1, L2, dt, g);
+        case DoublePendulum::Variant::Compound:
+            return std::make_unique<CompoundDoublePendulum>(M1, M2, L1, L2, dt, g);
+        default:
+            return nullptr;
+    }
 };
 
-DoublePendulum::~DoublePendulum() { };
+std::string DoublePendulum::variantToString(DoublePendulum::Variant pendulumType) {
+    switch (pendulumType) {
+        case DoublePendulum::Variant::Simple:
+            return "simple";
+        case DoublePendulum::Variant::Compound:
+            return "compound";
+        default:
+            return "UNKNOWN";
+    }
+}
 
 /*
  * Calculates the next state vector based on the current one and the equation of motion in the state form,

@@ -2,8 +2,7 @@
 #include "CompoundDoublePendulum.hpp"
 
 CompoundDoublePendulum::CompoundDoublePendulum(double M1, double M2, double L1, double L2, double dt, double g) :
-    DoublePendulum(M1, M2, L1, L2, dt, g) {
-    
+    DoublePendulum(M1, M2, L1, L2, dt, g, DoublePendulum::Variant::Compound) {
     // Constants used in the equation of state.
     this->c[0] = this->M1 * pow(this->L1 / 2.0, 2) / 2.0
                + this->M1 * pow(this->L1, 2) / 12.0 / 2.0

@@ -2,7 +2,7 @@
 #include "SimpleDoublePendulum.hpp"
 
 SimpleDoublePendulum::SimpleDoublePendulum(double M1, double M2, double L1, double L2, double dt, double g) :
-    DoublePendulum(M1, M2, L1, L2, dt, g) {};
+    DoublePendulum(M1, M2, L1, L2, dt, g, DoublePendulum::Variant::Simple) {};
 
 /*
  * Equations of motion of a simple double pendulum in state form.
