@@ -117,7 +117,12 @@ for x, y, l, val in zip(x_coords, y_coords, l_dim, values):
         (x - orig_space[0][0]) / ((orig_space[0][1] - orig_space[0][0]) / img_dim[0]) + round((l / resolution - 1) / 2),
         (y - orig_space[1][0]) / ((orig_space[1][1] - orig_space[1][0]) / img_dim[1]) + round((l / resolution - 1) / 2)
     ]
-    # print([x, y, l], "->", rectangle_dim)
+    # Flip the coordinate system around the y axis:
+    # PIL has x positive from left to right and y positive top to bottom, while
+    # the image data refers to a system with x positive from left to right and 
+    # y positive from bottom to top.
+    rectangle_dim[1] = img_dim[1] - rectangle_dim[1] - 1
+    rectangle_dim[3] = img_dim[1] - rectangle_dim[3] - 1
 
     color = None
     if val == value_max:

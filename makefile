@@ -7,7 +7,7 @@ SRC_DIR = src
 
 # Compiler.
 CXX = g++
-CXXFLAGS = -Werror -Wall -O2
+CXXFLAGS = -std=c++17 -Werror -Wall -O2
 
 # Executable files.
 EXEC_NAMES = fractalGen fractalGenAdaptive timehistory

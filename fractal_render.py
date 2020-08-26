@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--symmetry",
     help="Enable symemtric replication of the final image.",
-    action="store_true"
+    choices=["x","y"]
 )
 parser.add_argument(
     "input_file",
@@ -101,20 +101,21 @@ else:
 
 color_gradient = [color for colors in scale_colors for color in colors[0].range_to(colors[1], color_grad_subdivisions)]
 
-# Read data from the input file.
-with open(args.input_file, "r") as f:
-    # Lines starting with # are comments.
-    lines = [line for line in f.readlines() if line[0] != "#"]
-
 # Separate the data in these lists.
 row = []
 col = []
 value = []
-for line in lines:
-    [r, c, v] = line.split(separator)
-    row.append(int(r))
-    col.append(int(c))
-    value.append(int(v))
+
+# Read data from the input file.
+with open(args.input_file, "r") as f:
+    # Lines starting with # are comments.
+    for line in f.readlines():
+        if line[0] != "#":
+            [r, c, v] = line.split(separator)
+            row.append(int(r))
+            col.append(int(c))
+            value.append(int(v))
+
 row_max = max(row)
 col_max = max(col)
 value_max = max(value)
@@ -126,15 +127,24 @@ if not enable_symmetry:
     # No symmetry: dimensions and number of rows/columns are the same.
     row_len = row_max + 1
     col_len = col_max + 1
-elif (row_max + 1) * 2 == (col_max + 1):
+elif enable_symmetry == "y" and (col_max + 1) % 2 == 0:
     # Vertical symmetry and even number of columns: duplicate the columns.
     row_len = (row_max + 1) * 2
     col_len = col_max + 1
-else:
-    # Vertical symmetry and off number of columns: duplicate the columns
+elif enable_symmetry == "y":
+    # Vertical symmetry and odd number of columns: duplicate the columns
     # keeping the central one.
     row_len = row_max * 2
     col_len = col_max + 1
+elif enable_symmetry == "x" and (row_max + 1) % 2 == 0:
+    # Horizontal symmetry and even number of rows: duplicate the rows.
+    row_len = row_max + 1
+    col_len = (col_max + 1) * 2
+elif enable_symmetry == "x":
+    # Horizontal symmetry and odd number of rows: duplicate the rows
+    # keeping the central one.
+    row_len = row_max + 1
+    col_len = col_max * 2
 image_dimensions = (row_len, col_len)
 
 # The background of the image is preset to color_outofscale because in the
