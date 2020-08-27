@@ -4,6 +4,8 @@
 #include <functional>
 #include <memory>
 #include <array>
+#include <thread>
+#include <vector>
 #include "DataRegion.hpp"
 #include "DataPoint.hpp"
 
@@ -52,12 +54,37 @@ DataRegion::DataRegion(double x, double y, double size, double fullDomainSize, s
     calcPriority();
 }
 
-
-std::array<DataRegion*, DataRegion::DATA_POINTS_N> DataRegion::getSubRegions() {
+std::array<DataRegion*, DataRegion::DATA_POINTS_N> DataRegion::getSubRegions(int forceThreadNum) {
     std::array<DataRegion*, DATA_POINTS_N> subRegions;
-    for (int i = 0; i < DATA_POINTS_N; i++) {
-        subRegions[i] = new DataRegion(dataPoints[i], fullDomainSize, f);
+    int threadsNum;
+    std::vector<std::thread> threads;
+
+    // Multiple threads can be used to calculate the pixel data in parallel.
+    if (forceThreadNum == 0) {
+        threadsNum = std::thread::hardware_concurrency();
+    } else {
+        threadsNum = forceThreadNum;
     }
+
+    auto createRegions = [&subRegions, this](int threadsNum, int threadIndex) {
+        // Each thread creates different regions thanks to the different offset.
+        for (int i = threadIndex; i < DATA_POINTS_N; i += threadsNum) {
+            subRegions[i] = new DataRegion(this->dataPoints[i], this->fullDomainSize, this->f);
+        }
+    };
+
+    // Create N-1 threads...
+    for (int threadIndex = 0; threadIndex < threadsNum - 1; threadIndex++) {
+        threads.push_back(std::thread(createRegions, threadsNum, threadIndex));
+    }
+    // ... and also use the current thread.
+    createRegions(threadsNum, threadsNum-1);
+
+    // Wait for all threads to finish.
+    for (auto &t: threads) {
+        t.join();
+    }
+
     return subRegions;
 }
 
