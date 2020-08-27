@@ -4,6 +4,7 @@
 #include <memory>
 #include <array>
 #include <functional>
+#include <mutex>
 #include "Fractal.hpp"
 
 /*
@@ -25,6 +26,8 @@ class UniformGrid {
         std::array<int, 2> imgSize;
         // Text output lines starting with this character will be interpreted as comments, not data.
         static const char textComment = '#';
+        // For thread safe output to a file.
+        std::mutex outFileMutex;
 
         /*
          * Loop over all the pixels and for each one calculate the fractal
@@ -34,6 +37,14 @@ class UniformGrid {
          * dump of the data, build an in-memory image...)
          */
         void run(std::function<void(int col, int row, int stepCount)> f);
+        /*
+         * This is the same as run(), but only operates on a subset of pixels.
+         * 
+         * Each thread, thorugh the threadsNum and threadIndex arguments, is
+         * assigned a different, non-intersecting set of pixels to calculate
+         * autonomously.
+         */
+        void runThreaded(int threadsNum, int threadIndex, std::function<void(int col, int row, int stepCount)> f);
 
     public:
         UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax,
@@ -44,8 +55,12 @@ class UniformGrid {
          * 
          * This file can be then read by other programs (e.g. fractal_render.py)
          * to render the image of the fractal.
+         * 
+         * The forceThreadNum parameter can be used to force a certain number
+         * of threads to be used. If it is 0 the number of threads is automatically
+         * assigned to be std::thread::hardware_concurrency().
          */
-        void printDataToFile(const std::string fileName, const std::string separator = "\t");
+        void printDataToFile(const std::string fileName, const std::string separator = "\t", int forceThreadNum = 0);
 };
 
 #endif

@@ -3,6 +3,9 @@
 #include <chrono>
 #include <array>
 #include <functional>
+#include <vector>
+#include <thread>
+#include <mutex>
 #include "UniformGrid.hpp"
 
 UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize) :
@@ -12,12 +15,19 @@ UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double 
     this->imgSize[1] = (int) ceil((this->ai2Max - this->ai2Min) / this->gridSize);
 };
 
-void UniformGrid::run(std::function<void(int col, int row, int stepCount)> f) {
+void UniformGrid::runThreaded(int threadsNum, int threadIndex, std::function<void(int col, int row, int stepCount)> f) {
     int row, col, stepCount;
     double ai1, ai2;
 
+    // Each thread starts at an offset so as not to overlap with other threads.
     row = 0;
-    col = 0;
+    col = threadIndex;
+
+    // Check that we are still inside the image boundaries.
+    if (col >= this->imgSize[0]) {
+        row += (int) (col / this->imgSize[0]);
+        col = col % this->imgSize[0];
+    }
     // Loop until the (row, col) coordinates point outside the image.
     while (row < this->imgSize[1]) {
         // Convert (row, col) pixel position to (ai1, ai2) values.
@@ -30,8 +40,8 @@ void UniformGrid::run(std::function<void(int col, int row, int stepCount)> f) {
         // Output.
         f(col, row, stepCount);
         
-        // Step to the next pixel.
-        col += 1;
+        // Step to the next pixel, skipping all the pixels other threads are working on.
+        col += threadsNum;
         // If the pixel was out of the row switch to the next row.
         if (col >= this->imgSize[0]) {
             row += (int) (col / this->imgSize[0]);
@@ -40,7 +50,12 @@ void UniformGrid::run(std::function<void(int col, int row, int stepCount)> f) {
     }
 };
 
-void UniformGrid::printDataToFile(const std::string fileName, const std::string separator) {
+void UniformGrid::run(std::function<void(int col, int row, int stepCount)> f) {
+    // Run thread with a single thread.
+    this->runThreaded(1, 0, f);
+};
+
+void UniformGrid::printDataToFile(const std::string fileName, const std::string separator, int forceThreadNum) {
     std::ofstream outFile(fileName);
     std::string systemTypeStr;
     StateVector currState, nextState;
@@ -71,10 +86,33 @@ void UniformGrid::printDataToFile(const std::string fileName, const std::string 
     
     outFile << this->textComment << "renderType" << "=" << "uniform" << std::endl;
 
-    // Print the text output describing each pixel in outFile.
-    this->run([this, separator, &outFile](int i, int j, int count) {
+    // Multiple threads can be used to calculate the pixel data in parallel.
+    int nThreads;
+    if (forceThreadNum == 0) {
+        nThreads = std::thread::hardware_concurrency();
+    } else {
+        nThreads = forceThreadNum;
+    }
+    std::vector<std::thread> threads;
+
+    // Thread safe print data thanks to the mutex.
+    auto printData = [this, separator, &outFile](int i, int j, int count) {
+        const std::lock_guard<std::mutex> lock(this->outFileMutex);
         outFile << i << separator << j << separator << count << std::endl;
-    });
+    };
+
+    // Create N-1 new threds since the main which is already in execution
+    // is one of the N threads.
+    for (int i = 0; i < nThreads - 1; i++) {
+        threads.push_back(std::thread(&UniformGrid::runThreaded, this, nThreads, i, printData));
+    }
+    // No need for std::thread() to execute code on the main thread.
+    this->runThreaded(nThreads, nThreads - 1, printData);
+
+    // Wait for all the threads to finish.
+    for (auto &t: threads) {
+        t.join();
+    }
 
     // Write elapsed time in the footer.
     auto chronoStop = std::chrono::high_resolution_clock::now();
