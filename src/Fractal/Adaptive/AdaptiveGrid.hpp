@@ -3,8 +3,8 @@
 
 #include <memory>
 #include <set>
-#include "../AdaptiveCalculation/DataRegion.hpp"
-#include "Fractal.hpp"
+#include "DataRegion.hpp"
+#include "../Fractal.hpp"
 
 /*
  * Sample the space with varying resolutions, depending on the complexity of

@@ -3,7 +3,7 @@
 #include <memory>
 #include "DoublePendulum/DoublePendulum.hpp"
 #include "Fractal/Fractal.hpp"
-#include "Fractal/AdaptiveGrid.hpp"
+#include "Fractal/Adaptive/AdaptiveGrid.hpp"
 
 const double g = 9.81;
 

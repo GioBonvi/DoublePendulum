@@ -1,7 +1,7 @@
 #include <array>
 #include <fstream>
 #include <chrono>
-#include "../AdaptiveCalculation/DataRegion.hpp"
+#include "DataRegion.hpp"
 #include "AdaptiveGrid.hpp"
 
 AdaptiveGrid::AdaptiveGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Central, double ai2Central, double aiSize) :
