@@ -32,7 +32,7 @@ void UniformGrid::runThreaded(int threadsNum, int threadIndex, std::function<voi
     while (row < this->imgSize[1]) {
         // Convert (row, col) pixel position to (ai1, ai2) values.
         ai1 = this->ai1Min + col * this->gridSize;
-        ai2 = this->ai2Min + row * this->gridSize;
+        ai2 = this->ai2Max - row * this->gridSize; // Image coordinate system has y axis inverted.
 
         // Evaluate.
         stepCount = this->fractal->stepsToFlip(ai1, ai2, this->nStepMax);
@@ -55,7 +55,7 @@ void UniformGrid::run(std::function<void(int col, int row, int stepCount)> f) {
     this->runThreaded(1, 0, f);
 };
 
-void UniformGrid::printDataToFile(const std::string fileName, const std::string separator, int forceThreadNum) {
+void UniformGrid::saveData(const std::string fileName, const std::string separator, int forceThreadNum) {
     std::ofstream outFile(fileName);
     std::string systemTypeStr;
     StateVector currState, nextState;
@@ -96,9 +96,9 @@ void UniformGrid::printDataToFile(const std::string fileName, const std::string 
     std::vector<std::thread> threads;
 
     // Thread safe print data thanks to the mutex.
-    auto printData = [this, separator, &outFile](int i, int j, int count) {
+    auto printData = [this, separator, &outFile](int i, int j, int stepCount) {
         const std::lock_guard<std::mutex> lock(this->outFileMutex);
-        outFile << i << separator << j << separator << count << std::endl;
+        outFile << i << separator << j << separator << stepCount << std::endl;
     };
 
     // Create N-1 new threds since the main which is already in execution

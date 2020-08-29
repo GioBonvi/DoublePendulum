@@ -73,5 +73,5 @@ int main(int argc, const char * argv[])
     );
     UniformGrid grid(fractal, nStepMax, ai1Min, ai1Max, ai2Min, ai2Max, gridSize);
 
-    grid.printDataToFile(outFileName);
+    grid.saveData(outFileName);
 }

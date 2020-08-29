@@ -51,16 +51,17 @@ class UniformGrid {
                     double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize);
 
         /*
-         * Dump the sampled data values in an ASCII file.
+         * Save the sampled data values in an ASCII file.
          * 
-         * This file can be then read by other programs (e.g. fractal_render.py)
-         * to render the image of the fractal.
+         * This file can be then read by other programs to render the image of
+         * the fractal multiple times without having to perform the calculation
+         * all over again.
          * 
          * The forceThreadNum parameter can be used to force a certain number
          * of threads to be used. If it is 0 the number of threads is automatically
          * assigned to be std::thread::hardware_concurrency().
          */
-        void printDataToFile(const std::string fileName, const std::string separator = "\t", int forceThreadNum = 0);
+        void saveData(const std::string fileName, const std::string separator = "\t", int forceThreadNum = 0);
 };
 
 #endif

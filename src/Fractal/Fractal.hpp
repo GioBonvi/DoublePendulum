@@ -17,6 +17,7 @@
  */
 class Fractal {
     public:
+        static const int STEPS_OUT_OF_SCALE;
         // Pointer to the double pendulum to observe.
         std::unique_ptr<DoublePendulum> pendulum;
 

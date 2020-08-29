@@ -5,6 +5,8 @@
 #include "../DoublePendulum/SimpleDoublePendulum.hpp"
 #include "../DoublePendulum/CompoundDoublePendulum.hpp"
 
+const int Fractal::STEPS_OUT_OF_SCALE = 0;
+
 Fractal::Fractal(std::unique_ptr<DoublePendulum> pendulum) :
     pendulum{std::move(pendulum)} {};
 
@@ -45,7 +47,7 @@ int Fractal::stepsToFlip(double ai1, double ai2, int nStepMax) {
     // If this condition is not met then it is physically impossible for any rod to flip.
     // See: http://csaapt.org/uploads/3/4/4/2/34425343/csaapt_maypalace_sp16.pdf
     if (3 * this->pendulum->L1 * cos(currState[0]) + this->pendulum->L2 * cos(currState[2]) > 2) {
-        return nStepMax;
+        return Fractal::STEPS_OUT_OF_SCALE;
     }
 
     // Numerically solve the state equation.
@@ -54,11 +56,11 @@ int Fractal::stepsToFlip(double ai1, double ai2, int nStepMax) {
 
         // Check if a flip happened between the last two states.
         if (count > 1 && this->detectFlip(currState, nextState)) {
-            break;
+            return count;
         }
 
         // Update the current state.
         currState = nextState;
     }
-    return count;
+    return Fractal::STEPS_OUT_OF_SCALE;
 };
