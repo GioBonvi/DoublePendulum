@@ -55,7 +55,7 @@ class AdaptiveGrid {
 
         // Perform one or more calculation cycle.
         void cycle(int nCycles = 1);
-        void printDataToFile(const std::string fileName, const std::string separator = "\t");
+        void saveData(const std::string fileName, const std::string separator = "\t");
 };
 
 #endif

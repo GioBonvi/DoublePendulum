@@ -89,15 +89,15 @@ int main(int argc, const char * argv[])
             grid.cycle(nCyclesPrint);
             cycles += nCyclesPrint;
             // ... print the intermediate restults...
-            grid.printDataToFile(outFileName);
+            grid.saveData(outFileName);
         }
         // ... perform the last calculations and print the final results.
         grid.cycle(nCycles - cycles);
-        grid.printDataToFile(outFileName);
+        grid.saveData(outFileName);
     } else {
         // Perform all the calculations...
         grid.cycle(nCycles);
         // ... then print the final result.
-        grid.printDataToFile(outFileName);
+        grid.saveData(outFileName);
     }
 }

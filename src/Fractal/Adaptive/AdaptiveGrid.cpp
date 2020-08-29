@@ -1,6 +1,5 @@
 #include <array>
 #include <fstream>
-#include <chrono>
 #include "DataRegion.hpp"
 #include "AdaptiveGrid.hpp"
 
@@ -51,12 +50,10 @@ void AdaptiveGrid::cycle(int nCycles) {
     }
 }
 
-void AdaptiveGrid::printDataToFile(const std::string fileName, const std::string separator) {
+void AdaptiveGrid::saveData(const std::string fileName, const std::string separator) {
     std::ofstream outFile(fileName);
     std::string systemTypeStr;
     StateVector currState, nextState;
-
-    auto chronoStart = std::chrono::high_resolution_clock::now();
 
     systemTypeStr = DoublePendulum::variantToString(this->fractal->pendulum->variant);
 
@@ -82,8 +79,4 @@ void AdaptiveGrid::printDataToFile(const std::string fileName, const std::string
         outFile << (*region)->getTextOutput();
     }
 
-    // Write elapsed time in the footer.
-    auto chronoStop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(chronoStop - chronoStart);
-    outFile << "# Elapsed time: " << duration.count() << " s";
 };
