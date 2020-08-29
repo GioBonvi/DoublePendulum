@@ -8,6 +8,8 @@
 #include "UniformGrid.hpp"
 #include "ColorScale.hpp"
 
+const char UniformGrid::textComment = '#';
+
 UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize) :
     fractal{fractal}, ai1Min{ai1Min}, ai1Max{ai1Max}, ai2Min{ai2Min}, ai2Max{ai2Max}, gridSize{gridSize}, nStepMax{nStepMax}
 {

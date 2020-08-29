@@ -4,6 +4,8 @@
 #include "DataRegion.hpp"
 #include "AdaptiveGrid.hpp"
 
+const char AdaptiveGrid::textComment = '#';
+
 AdaptiveGrid::AdaptiveGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Central, double ai2Central, double aiSize) :
     fractal{fractal}, ai1Central{ai1Central}, ai2Central{ai2Central}, aiSize{aiSize}, nStepMax{nStepMax} {
         this->initRegions();

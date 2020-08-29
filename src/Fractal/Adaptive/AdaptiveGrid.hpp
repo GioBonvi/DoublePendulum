@@ -28,7 +28,7 @@ class AdaptiveGrid {
         // Maximum number of steps to solve the motion of the pendulum.
         const int nStepMax;
         // Text output lines starting with this character will be interpreted as comments, not data.
-        static const char textComment = '#';
+        static const char textComment;
 
         /**
          * Custom comparator to compare pointers of any type.

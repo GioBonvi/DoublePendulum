@@ -24,7 +24,7 @@ class UniformGrid {
         // Final image size [x, y].
         std::array<int, 2> imgSize;
         // Text output lines starting with this character will be interpreted as comments, not data.
-        static const char textComment = '#';
+        static const char textComment;
         // Evaluated data.
         std::vector<int> data;
 
