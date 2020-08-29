@@ -1,8 +1,12 @@
+#include <memory>
 #include <cmath>
 #include <fstream>
 #include <vector>
 #include <thread>
+#include <png++/image.hpp>
+#include <png++/rgb_pixel.hpp>
 #include "UniformGrid.hpp"
+#include "ColorScale.hpp"
 
 UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize) :
     fractal{fractal}, ai1Min{ai1Min}, ai1Max{ai1Max}, ai2Min{ai2Min}, ai2Max{ai2Max}, gridSize{gridSize}, nStepMax{nStepMax}
@@ -111,3 +115,24 @@ void UniformGrid::saveData(const std::string fileName, const std::string separat
         outFile << x << separator << y << separator << this->data[i] << std::endl;
     }
 };
+
+std::unique_ptr<png::image<png::rgb_pixel>> UniformGrid::render() {
+    auto img = std::make_unique<png::image<png::rgb_pixel>>(this->imgSize[0], this->imgSize[1]);
+    ColorScale colorScale = ColorScale();
+    float baseSteps = sqrt(this->fractal->pendulum->L1 / this->fractal->pendulum->g) / this->fractal->pendulum->dt;
+    
+    // Output data.
+    int x, y;
+    for (uint i = 0; i < this->data.size(); i++) {
+        x = i % imgSize[0];
+        y = i / imgSize[0];
+        img->set_pixel(x, y, colorScale.getColor(data[this->imgSize[0] * y + x] / baseSteps, Fractal::STEPS_OUT_OF_SCALE));
+    }
+    
+    return img;
+};
+
+void UniformGrid::saveImage(const std::string fileName) {
+    auto img = this->render();
+    img->write(fileName);
+}

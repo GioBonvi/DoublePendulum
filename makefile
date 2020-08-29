@@ -8,6 +8,7 @@ SRC_DIR = src
 # Compiler.
 CXX = g++
 CXXFLAGS = -std=c++17 -Werror -Wall -O2
+CXXFLAGS_COMPILE = `libpng-config --cflags` -c
 
 # Executable files.
 EXEC_NAMES = fractalGen fractalGenAdaptive timehistory
@@ -38,17 +39,17 @@ all: $(EXEC_FILES)
 $(BIN_DIR)/timehistory : $(BIN_DIR)/% : $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND)
 # Ensure directory strucutre is preserved.
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 $(BIN_DIR)/fractalGen : $(BIN_DIR)/% : $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND) $(OBJ_FRACTAL)
 # Ensure directory strucutre is preserved.
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -pthread $^ -o $@
+	$(CXX) $(CXXFLAGS) -pthread $^ -o $@ `libpng-config --ldflags`
 
 $(BIN_DIR)/fractalGenAdaptive : $(BIN_DIR)/%: $(BUILD_DIR)/%.o $(OBJ_DOUBLEPEND) $(OBJ_FRACTAL) $(OBJ_ADAPTIVE_FRACTAL)
 # Ensure directory strucutre is preserved.
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -pthread $^ -o $@
+	$(CXX) $(CXXFLAGS) -pthread $^ -o $@ `libpng-config --ldflags`
 
 # Include all dependency (.d) files.
 -include $(DEP_ALL)
@@ -61,7 +62,7 @@ $(BUILD_DIR)/%.o : $(SRC_DIR)/%.cpp
 	@mkdir -p $(@D)
 # The -MMD flags additionaly creates a .d file with the same name as the .o
 # file in the same directory.
-	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CXXFLAGS_COMPILE) -MMD $< -o $@
 
 .PHONY: clean
 clean:

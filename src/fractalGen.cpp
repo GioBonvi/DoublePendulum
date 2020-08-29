@@ -1,6 +1,8 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <png++/image.hpp>
+#include <png++/rgb_pixel.hpp>
 #include "DoublePendulum/DoublePendulum.hpp"
 #include "Fractal/Fractal.hpp"
 #include "Fractal/UniformGrid.hpp"
@@ -10,7 +12,7 @@ const double g = 9.81;
 void printHelpMessage() {
     std::cout << "Usage:" << std::endl << std::endl;
     std::cout << program_invocation_name << " outFile pendulumType M1 M2 L1 L2 ai1Min aiMax ai2Min ai2Max gridSize dt nStepMax" << std::endl << std::endl;
-    std::cout << "\toutFile:    output file name." << std::endl;
+    std::cout << "\toutFile:    output file name (no extension)." << std::endl;
     std::cout << "\tpendulumType:" << std::endl;
     std::cout << "              type of pendulum. One of [simple, compound]." << std::endl;
     std::cout << "\tM1, M2:     masses of the rods in [kg]." << std::endl;
@@ -78,5 +80,6 @@ int main(int argc, const char * argv[])
     );
 
     grid.calcData();
-    grid.saveData(outFileName);
+    grid.saveImage(outFileName);
+    // grid.saveData(outFileName);
 }

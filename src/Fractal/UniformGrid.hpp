@@ -34,6 +34,8 @@ class UniformGrid {
          * autonomously.
          */
         void calcThreaded(int threadsNum, int threadIndex);
+        // Renders the data into a in-memory PNG image of the fractal.
+        std::unique_ptr<png::image<png::rgb_pixel>> render();
 
     public:
         UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax,
@@ -53,6 +55,8 @@ class UniformGrid {
          * assigned to be std::thread::hardware_concurrency().
          */
         void saveData(const std::string fileName, const std::string separator = "\t");
+        // Save the image render of the fractal in a PNG file.
+        void saveImage(const std::string fileName);
 };
 
 #endif
