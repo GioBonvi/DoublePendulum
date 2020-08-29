@@ -38,14 +38,14 @@ class AdaptiveGrid {
         class ComparePointers {
             public:
                 template<typename T>
-                bool operator()(T *a, T *b) {
+                bool operator()(std::unique_ptr<T> const &a, std::unique_ptr<T> const &b) {
                     return (*a) < (*b);
                 }
         };
         // The multiset keeps the regions ordered by priority value, so
         // std::prev(regions.end()) always is the region with highest priority.
         // Note: a custom comparator is adopted to compare pointers.
-        std::multiset<DataRegion*, ComparePointers> regions;
+        std::multiset<std::unique_ptr<DataRegion>, ComparePointers> regions;
 
         void initRegions();
 

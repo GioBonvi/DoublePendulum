@@ -58,7 +58,7 @@ class DataRegion {
         DataRegion(DataPoint centralDp, double fullDomainSize, std::function<double(double, double)> f);
 
         // Generates the new regions from the existing subregions.
-        std::array<DataRegion*, DATA_POINTS_N> getSubRegions(int forceThreadNum = 0);
+        std::array<std::unique_ptr<DataRegion>, DATA_POINTS_N> getSubRegions(int forceThreadNum = 0);
         
         // Text output passed to a Python script for image rendering.
         std::string getTextOutput(const char *separator = "\t");

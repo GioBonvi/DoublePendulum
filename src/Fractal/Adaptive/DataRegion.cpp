@@ -54,8 +54,8 @@ DataRegion::DataRegion(double x, double y, double size, double fullDomainSize, s
     calcPriority();
 }
 
-std::array<DataRegion*, DataRegion::DATA_POINTS_N> DataRegion::getSubRegions(int forceThreadNum) {
-    std::array<DataRegion*, DATA_POINTS_N> subRegions;
+std::array<std::unique_ptr<DataRegion>, DataRegion::DATA_POINTS_N> DataRegion::getSubRegions(int forceThreadNum) {
+    std::array<std::unique_ptr<DataRegion>, DATA_POINTS_N> subRegions;
     int threadsNum;
     std::vector<std::thread> threads;
 
@@ -69,7 +69,7 @@ std::array<DataRegion*, DataRegion::DATA_POINTS_N> DataRegion::getSubRegions(int
     auto createRegions = [&subRegions, this](int threadsNum, int threadIndex) {
         // Each thread creates different regions thanks to the different offset.
         for (int i = threadIndex; i < DATA_POINTS_N; i += threadsNum) {
-            subRegions[i] = new DataRegion(this->dataPoints[i], this->fullDomainSize, this->f);
+            subRegions[i] = std::make_unique<DataRegion>(this->dataPoints[i], this->fullDomainSize, this->f);
         }
     };
 

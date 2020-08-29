@@ -11,16 +11,13 @@ AdaptiveGrid::AdaptiveGrid(std::shared_ptr<Fractal> fractal, int nStepMax, doubl
     };
 
 AdaptiveGrid::~AdaptiveGrid() {
-    for(auto region = std::begin(this->regions); region != std::end(this->regions); ++region) {
-        delete *region;
-    }
     regions.clear();
 };
 
 void AdaptiveGrid::initRegions() {
     // The first region covers the whole domanin: subregions will be defined
     // automatically around the most "interesting" areas.
-    this->regions.insert(new DataRegion(
+    this->regions.insert(std::make_unique<DataRegion>(
         this->ai1Central,
         this->ai2Central,
         this->aiSize,
@@ -33,19 +30,17 @@ void AdaptiveGrid::initRegions() {
 };
 
 void AdaptiveGrid::cycle(int nCycles) {
-    std::array<DataRegion*, DataRegion::DATA_POINTS_N> newRegions;
+    std::array<std::unique_ptr<DataRegion>, DataRegion::DATA_POINTS_N> newRegions;
 
     for (int i = 0; i < nCycles; i++) {
         // Define the new regions based on the highest priority region.
-        newRegions = (*std::prev(regions.end()))->getSubRegions();
+        newRegions = (*(this->regions.rbegin()))->getSubRegions();
 
-        // Delete the old region.
-        delete *std::prev(regions.end());
-        regions.erase(std::prev(regions.end()));
-
+        regions.erase(std::prev(this->regions.end()));
+        
         // Insert the new regions.
         for(auto newRegion = std::begin(newRegions); newRegion != std::end(newRegions); ++newRegion) {
-            regions.insert(*newRegion);
+            regions.insert(std::move(*newRegion));
         }
     }
 }
