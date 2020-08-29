@@ -77,8 +77,11 @@ int main(int argc, const char * argv[])
         nCyclesPrint = 0;
     }
 
-    std::shared_ptr<Fractal> fractal = std::make_shared<Fractal> (
-        DoublePendulum::makeDoublePendulum(M1, M2, L1, L2, dt, g, pendulumType)
+    AdaptiveGrid grid(
+        std::make_unique<Fractal> (
+            DoublePendulum::makeDoublePendulum(M1, M2, L1, L2, dt, g, pendulumType)
+        ),
+        nStepMax, ai1Central, ai2Central, aiSize
     );
     AdaptiveGrid grid(fractal, nStepMax, ai1Central, ai2Central, aiSize);
 

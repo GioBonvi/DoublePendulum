@@ -134,9 +134,15 @@ void DataRegion::calcPriority() {
     }
     sigma = sqrt(sigma);
 
-    // Unbiased formulation of CV.
-    // Source: https://en.wikipedia.org/wiki/Coefficient_of_variation#Estimation
-    cv = (1  + 0.25 / DATA_POINTS_N) * sigma / mean;
+    
+    if (mean == 0) {
+        // If the mean is 0 the data is perfectly uniform.
+        cv = 0;
+    } else {
+        // Unbiased formulation of CV.
+        // Source: https://en.wikipedia.org/wiki/Coefficient_of_variation#Estimation
+        cv = (1  + 0.25 / DATA_POINTS_N) * sigma / mean;
+    }
 
     /* 
      * This is a key element of this class and might need to be optimized or
