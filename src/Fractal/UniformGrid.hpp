@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <memory>
-#include <array>
 #include "Fractal.hpp"
 
 /*
@@ -22,10 +21,10 @@ class UniformGrid {
         // Maximum number of steps to solve the motion of the pendulum.
         const int nStepMax;
         // Final image size [x, y].
-        std::array<int, 2> imgSize;
+        struct { int x; int y; } imgSize;
         // Text output lines starting with this character will be interpreted as comments, not data.
         static const char textComment;
-        // Evaluated data.
+        // 1D data vector actually containing the 2D data.
         std::vector<int> data;
 
         /*

@@ -13,10 +13,10 @@ const char UniformGrid::textComment = '#';
 UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize) :
     fractal{fractal}, ai1Min{ai1Min}, ai1Max{ai1Max}, ai2Min{ai2Min}, ai2Max{ai2Max}, gridSize{gridSize}, nStepMax{nStepMax}
 {
-    this->imgSize[0] = (int) ceil((this->ai1Max - this->ai1Min) / this->gridSize);
-    this->imgSize[1] = (int) ceil((this->ai2Max - this->ai2Min) / this->gridSize);
+    this->imgSize.x = (int) ceil((this->ai1Max - this->ai1Min) / this->gridSize);
+    this->imgSize.y = (int) ceil((this->ai2Max - this->ai2Min) / this->gridSize);
 
-    data.resize(imgSize[0] * imgSize[1], Fractal::STEPS_OUT_OF_SCALE);
+    data.resize(this->imgSize.x * this->imgSize.y, Fractal::STEPS_OUT_OF_SCALE);
 };
 
 void UniformGrid::calcThreaded(int threadsNum, int threadIndex) {
@@ -32,26 +32,26 @@ void UniformGrid::calcThreaded(int threadsNum, int threadIndex) {
     img_x = threadIndex;
 
     // Check that we are still inside the image boundaries.
-    if (img_x >= this->imgSize[0]) {
-        img_y += (int) (img_x / this->imgSize[0]);
-        img_x = img_x % this->imgSize[0];
+    if (img_x >= this->imgSize.x) {
+        img_y += (int) (img_x / this->imgSize.x);
+        img_x = img_x % this->imgSize.x;
     }
     // Loop until the (img_x, img_y) coordinates point outside the image.
-    while (img_y < this->imgSize[1]) {
+    while (img_y < this->imgSize.y) {
         // Convert (img_x, img_y) pixel position to (ai1, ai2) values.
         // NOTE: Image and user coordinate systems have inverted y axis.
         ai1 = this->ai1Min + img_x * this->gridSize;
         ai2 = this->ai2Max - img_y * this->gridSize;
 
         // Evaluate.
-        this->data[img_y * this->imgSize[0] + img_x] = this->fractal->stepsToFlip(ai1, ai2, this->nStepMax);
+        this->data[img_y * this->imgSize.x + img_x] = this->fractal->stepsToFlip(ai1, ai2, this->nStepMax);
         
         // Step to the next pixel, skipping all the pixels other threads are working on.
         img_x += threadsNum;
         // If the pixel was out of the row switch to the next row.
-        if (img_x >= this->imgSize[0]) {
-            img_y += (int) (img_x / this->imgSize[0]);
-            img_x = img_x % this->imgSize[0];
+        if (img_x >= this->imgSize.x) {
+            img_y += (int) (img_x / this->imgSize.x);
+            img_x = img_x % this->imgSize.x;
         }
     }
 };
@@ -104,31 +104,31 @@ void UniformGrid::saveData(const std::string fileName, const std::string separat
     outFile << this->textComment << "g" << "=" << this->fractal->pendulum->g << std::endl;
     outFile << this->textComment << "nStepMax" << "=" << this->nStepMax << std::endl;
     
-    outFile << this->textComment << "imgSizeX" << "=" << this->imgSize[0] << std::endl;
-    outFile << this->textComment << "imgSizeY" << "=" << this->imgSize[1] << std::endl;
+    outFile << this->textComment << "imgSizeX" << "=" << this->imgSize.x << std::endl;
+    outFile << this->textComment << "imgSizeY" << "=" << this->imgSize.y << std::endl;
     
     outFile << this->textComment << "renderType" << "=" << "uniform" << std::endl;
 
     // Output data.
     int x, y;
     for (uint i = 0; i < this->data.size(); i++) {
-        x = i % imgSize[0];
-        y = i / imgSize[0];
+        x = i % this->imgSize.x;
+        y = i / this->imgSize.x;
         outFile << x << separator << y << separator << this->data[i] << std::endl;
     }
 };
 
 std::unique_ptr<png::image<png::rgb_pixel>> UniformGrid::render() {
-    auto img = std::make_unique<png::image<png::rgb_pixel>>(this->imgSize[0], this->imgSize[1]);
+    auto img = std::make_unique<png::image<png::rgb_pixel>>(this->imgSize.x, this->imgSize.y);
     ColorScale colorScale = ColorScale();
     float baseSteps = sqrt(this->fractal->pendulum->L1 / this->fractal->pendulum->g) / this->fractal->pendulum->dt;
     
     // Output data.
     int x, y;
     for (uint i = 0; i < this->data.size(); i++) {
-        x = i % imgSize[0];
-        y = i / imgSize[0];
-        img->set_pixel(x, y, colorScale.getColor(data[this->imgSize[0] * y + x] / baseSteps, Fractal::STEPS_OUT_OF_SCALE));
+        x = i % this->imgSize.x;
+        y = i / this->imgSize.x;
+        img->set_pixel(x, y, colorScale.getColor(data[this->imgSize.x * y + x] / baseSteps, Fractal::STEPS_OUT_OF_SCALE));
     }
     
     return img;
