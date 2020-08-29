@@ -38,6 +38,7 @@ class DataRegion {
         static const int DATA_POINTS_ON_1D = 3;
         static const int DATA_POINTS_N = DATA_POINTS_ON_1D * DATA_POINTS_ON_1D;
         double priority;
+        DataPoint dataPoints[DATA_POINTS_N];
 
         /*
          * The DataRegion covers a square area of length size, whose center
@@ -73,7 +74,6 @@ class DataRegion {
         // The function to be evaluated is passed to each subregion when it is created.
         std::function<double(double, double)> f;
         double fullDomainSize;
-        DataPoint dataPoints[DATA_POINTS_N];
         // The algorithm to calculate the priority value of the region.
         void calcPriority();
 };

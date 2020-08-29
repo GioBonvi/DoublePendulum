@@ -83,7 +83,6 @@ int main(int argc, const char * argv[])
         ),
         nStepMax, ai1Central, ai2Central, aiSize
     );
-    AdaptiveGrid grid(fractal, nStepMax, ai1Central, ai2Central, aiSize);
 
     if (nCyclesPrint > 0) {
         int cycles = 0;
@@ -92,15 +91,15 @@ int main(int argc, const char * argv[])
             grid.cycle(nCyclesPrint);
             cycles += nCyclesPrint;
             // ... print the intermediate restults...
-            grid.saveData(outFileName);
+            grid.saveImage(outFileName);
         }
         // ... perform the last calculations and print the final results.
         grid.cycle(nCycles - cycles);
-        grid.saveData(outFileName);
+        grid.saveImage(outFileName);
     } else {
         // Perform all the calculations...
         grid.cycle(nCycles);
         // ... then print the final result.
-        grid.saveData(outFileName);
+        grid.saveImage(outFileName);
     }
 }

@@ -7,27 +7,14 @@ If you are skilled in C++ and want to drop a comment or even better some advice 
 
 ## Setup
 
-The project was developed and tested in a Linux environment (Ubuntu on WSL2), so the instructions refer to a Ubuntu environment.
-
-### C++
+The project was developed and tested in a Linux environment (Ubuntu on WSL2), so the instructions refer to a Ubuntu environment.  
+The tools/libraries required are:
 
 - `GNU Make` (highly recommended to run the build process)
 - `g++` is the default compiler and support for C++17 is required
 - `png++` library (required to render the fractal image)
 
 On a modern Ubuntu installation all the dependecies can be installed with: `sudo apt install build-essentials libpng++-dev`
-
-### Python
-
-The Python scripts are written in Python 3 and require some extra modules to be installed.  
-It is recommended the use of a virtual environment.
-
-```python3
-sudo apt install python3-venv
-python -m venv venv
-. venv/bin/activate
-pip install -r requirements.txt
-```
 
 ## Main classes
 
@@ -42,7 +29,7 @@ These classes are implementations of `DoublePendulum` describing systems with sl
  - `SimpleDoublePendulum` is a classic pendulum with the masses concentrated at the extremity of the rod
  - `CompoundDoublePendulum` is pendulum composed by bars with continuous mass distribution along the rod
 
-These two obviously have similar, but not identical dynamics.
+These two obviously have similar, but not identical, dynamics.
 
 #### `StateVector`
 
@@ -87,14 +74,12 @@ These are some of the concepts I tried to work on and the places where I used th
  - Smart pointers
  - Memory vs performance optimization (`Fractal`, `UniformGrid` and `AdaptiveGrid` classes)
  - Multithreading (`UniformGrid` and `AdaptiveGrid`)
- - Image manipulation and external libraries (`UniformGrid`)
+ - Image manipulation and external libraries (`libpng++` in `UniformGrid` and `AdaptiveGrid`)
 
-The python scripts are used to render the image from the data: I am keeping them until I'll be able to implement the same functionalities in C.
-
-In fact I am still wanting to expand this project, both to learn new things and to improve the results (especially the visualization of the fractal).  
+I still want to expand this project, both to learn new things and to improve the results (especially the visualization of the fractal).  
 Some of the possible features to work on:
 
- - Fractal rendering in C++ (remove python scripts)
+ - Fractal rendering in C++
     - [png++][png++ website]
     - [cimg][cimg website]
     - [Magick++][magick++ website]

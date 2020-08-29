@@ -1,7 +1,9 @@
+#include <cmath>
 #include <array>
 #include <fstream>
 #include "DataRegion.hpp"
 #include "AdaptiveGrid.hpp"
+#include "../ColorScale.hpp"
 
 const char AdaptiveGrid::textComment = '#';
 
@@ -27,6 +29,49 @@ void AdaptiveGrid::initRegions() {
             return this->fractal->stepsToFlip(x, y, this->nStepMax);
         }
     ));
+};
+
+std::unique_ptr<png::image<png::rgb_pixel>> AdaptiveGrid::render() {
+    double minSize, size;
+    struct { int x; int y; } imgSize;
+    ColorScale colorScale = ColorScale();
+    float baseSteps;
+    
+    minSize = this->aiSize;
+    // Identify the resolution of the image by finding the minimum subregion side length.
+    for (auto &region: this->regions) {
+        size = region->dataPoints[0].size;
+        if (size < minSize) {
+            minSize = size;
+        }
+    }
+    imgSize.x = round(this->aiSize / minSize);
+    imgSize.y = imgSize.x;
+
+    // Initialize the image.
+    auto img = std::make_unique<png::image<png::rgb_pixel>>(imgSize.x, imgSize.y);
+
+    auto drawSquare = [&img](int xCenter, int yCenter, int sizeLen, png::rgb_pixel color) {
+        int halfSizeLen = sizeLen / 2;
+        for (int x = xCenter - halfSizeLen; x <= xCenter + halfSizeLen; x++) {
+            for (int y = yCenter - halfSizeLen; y <= yCenter + halfSizeLen; y++) {
+                img->set_pixel(x, y, color);
+            }
+        }
+    };
+
+    // Calculate all the pixels.
+    baseSteps = sqrt(this->fractal->pendulum->L1 / this->fractal->pendulum->g) / this->fractal->pendulum->dt;
+    int x, y;
+    for (auto &region: this->regions) {
+        for (auto &dp: region->dataPoints) {
+            x = (int) ((dp.x + this->aiSize / 2) / minSize);
+            y = (int) ((dp.y + this->aiSize / 2) / minSize);
+            drawSquare(x, y, region->dataPoints[0].size / minSize, colorScale.getColor(dp.val / baseSteps, Fractal::STEPS_OUT_OF_SCALE));
+        }
+    }
+
+    return img;
 };
 
 void AdaptiveGrid::cycle(int nCycles) {
@@ -73,5 +118,9 @@ void AdaptiveGrid::saveData(const std::string fileName, const std::string separa
     for(auto region = std::begin(regions); region != std::end(regions); ++region) {
         outFile << (*region)->getTextOutput();
     }
+};
 
+void AdaptiveGrid::saveImage(const std::string fileName) {
+    auto img = this->render();
+    img->write(fileName);
 };

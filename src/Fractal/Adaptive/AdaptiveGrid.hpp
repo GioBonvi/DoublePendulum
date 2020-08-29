@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <set>
+#include <png++/png.hpp>
 #include "DataRegion.hpp"
 #include "../Fractal.hpp"
 
@@ -48,14 +49,29 @@ class AdaptiveGrid {
         std::multiset<std::unique_ptr<DataRegion>, ComparePointers> regions;
 
         void initRegions();
+        // Renders the data into a in-memory PNG image of the fractal.
+        std::unique_ptr<png::image<png::rgb_pixel>> render();
 
     public:
         AdaptiveGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Central, double ai2Central, double aiSize);
         ~AdaptiveGrid();
 
-        // Perform one or more calculation cycle.
+        // Perform one or more calculation cycles evaluating the fractal data and storing the results in memory.
         void cycle(int nCycles = 1);
+        /*
+         * Save the sampled data values in an ASCII file.
+         * 
+         * This file can be then read by other programs to render the image of
+         * the fractal multiple times without having to perform the calculation
+         * all over again.
+         * 
+         * The forceThreadNum parameter can be used to force a certain number
+         * of threads to be used. If it is 0 the number of threads is automatically
+         * assigned to be std::thread::hardware_concurrency().
+         */
         void saveData(const std::string fileName, const std::string separator = "\t");
+        // Save the image render of the fractal in a PNG file.
+        void saveImage(const std::string fileName);
 };
 
 #endif
