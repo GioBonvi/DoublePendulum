@@ -1,11 +1,7 @@
 #include <cmath>
 #include <fstream>
-#include <chrono>
-#include <array>
-#include <functional>
 #include <vector>
 #include <thread>
-#include <mutex>
 #include "UniformGrid.hpp"
 
 UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize) :
@@ -13,54 +9,75 @@ UniformGrid::UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax, double 
 {
     this->imgSize[0] = (int) ceil((this->ai1Max - this->ai1Min) / this->gridSize);
     this->imgSize[1] = (int) ceil((this->ai2Max - this->ai2Min) / this->gridSize);
+
+    data.resize(imgSize[0] * imgSize[1], Fractal::STEPS_OUT_OF_SCALE);
 };
 
-void UniformGrid::runThreaded(int threadsNum, int threadIndex, std::function<void(int col, int row, int stepCount)> f) {
-    int row, col, stepCount;
+void UniformGrid::calcThreaded(int threadsNum, int threadIndex) {
+    // Pixel coordinates in the image pixel reference system (origin top left,
+    // x positive to the right, y positive to the bottom).
+    int img_x, img_y;
+    // Initial conditions in the user reference system (origin in the center, x
+    // positive to the right, y positive to the top)
     double ai1, ai2;
 
     // Each thread starts at an offset so as not to overlap with other threads.
-    row = 0;
-    col = threadIndex;
+    img_y = 0;
+    img_x = threadIndex;
 
     // Check that we are still inside the image boundaries.
-    if (col >= this->imgSize[0]) {
-        row += (int) (col / this->imgSize[0]);
-        col = col % this->imgSize[0];
+    if (img_x >= this->imgSize[0]) {
+        img_y += (int) (img_x / this->imgSize[0]);
+        img_x = img_x % this->imgSize[0];
     }
-    // Loop until the (row, col) coordinates point outside the image.
-    while (row < this->imgSize[1]) {
-        // Convert (row, col) pixel position to (ai1, ai2) values.
-        ai1 = this->ai1Min + col * this->gridSize;
-        ai2 = this->ai2Max - row * this->gridSize; // Image coordinate system has y axis inverted.
+    // Loop until the (img_x, img_y) coordinates point outside the image.
+    while (img_y < this->imgSize[1]) {
+        // Convert (img_x, img_y) pixel position to (ai1, ai2) values.
+        // NOTE: Image and user coordinate systems have inverted y axis.
+        ai1 = this->ai1Min + img_x * this->gridSize;
+        ai2 = this->ai2Max - img_y * this->gridSize;
 
         // Evaluate.
-        stepCount = this->fractal->stepsToFlip(ai1, ai2, this->nStepMax);
-
-        // Output.
-        f(col, row, stepCount);
+        this->data[img_y * this->imgSize[0] + img_x] = this->fractal->stepsToFlip(ai1, ai2, this->nStepMax);
         
         // Step to the next pixel, skipping all the pixels other threads are working on.
-        col += threadsNum;
+        img_x += threadsNum;
         // If the pixel was out of the row switch to the next row.
-        if (col >= this->imgSize[0]) {
-            row += (int) (col / this->imgSize[0]);
-            col = col % this->imgSize[0];
+        if (img_x >= this->imgSize[0]) {
+            img_y += (int) (img_x / this->imgSize[0]);
+            img_x = img_x % this->imgSize[0];
         }
     }
 };
 
-void UniformGrid::run(std::function<void(int col, int row, int stepCount)> f) {
-    // Run thread with a single thread.
-    this->runThreaded(1, 0, f);
-};
+void UniformGrid::calcData(int forceThreadNum) {
+    // Multiple threads can be used to calculate the pixel data in parallel.
+    int nThreads;
+    if (forceThreadNum == 0) {
+        nThreads = std::thread::hardware_concurrency();
+    } else {
+        nThreads = forceThreadNum;
+    }
+    std::vector<std::thread> threads;
 
-void UniformGrid::saveData(const std::string fileName, const std::string separator, int forceThreadNum) {
+    // Create N-1 new threds since the main which is already in execution
+    // is one of the N threads.
+    for (int i = 0; i < nThreads - 1; i++) {
+        threads.push_back(std::thread(&UniformGrid::calcThreaded, this, nThreads, i));
+    }
+    // No need for std::thread() to execute code on the main thread.
+    this->calcThreaded(nThreads, nThreads - 1);
+
+    // Wait for all the threads to finish.
+    for (auto &t: threads) {
+        t.join();
+    }
+}
+
+void UniformGrid::saveData(const std::string fileName, const std::string separator) {
     std::ofstream outFile(fileName);
     std::string systemTypeStr;
     StateVector currState, nextState;
-
-    auto chronoStart = std::chrono::high_resolution_clock::now();
 
     systemTypeStr = DoublePendulum::variantToString(this->fractal->pendulum->variant);
 
@@ -86,36 +103,11 @@ void UniformGrid::saveData(const std::string fileName, const std::string separat
     
     outFile << this->textComment << "renderType" << "=" << "uniform" << std::endl;
 
-    // Multiple threads can be used to calculate the pixel data in parallel.
-    int nThreads;
-    if (forceThreadNum == 0) {
-        nThreads = std::thread::hardware_concurrency();
-    } else {
-        nThreads = forceThreadNum;
+    // Output data.
+    int x, y;
+    for (uint i = 0; i < this->data.size(); i++) {
+        x = i % imgSize[0];
+        y = i / imgSize[0];
+        outFile << x << separator << y << separator << this->data[i] << std::endl;
     }
-    std::vector<std::thread> threads;
-
-    // Thread safe print data thanks to the mutex.
-    auto printData = [this, separator, &outFile](int i, int j, int stepCount) {
-        const std::lock_guard<std::mutex> lock(this->outFileMutex);
-        outFile << i << separator << j << separator << stepCount << std::endl;
-    };
-
-    // Create N-1 new threds since the main which is already in execution
-    // is one of the N threads.
-    for (int i = 0; i < nThreads - 1; i++) {
-        threads.push_back(std::thread(&UniformGrid::runThreaded, this, nThreads, i, printData));
-    }
-    // No need for std::thread() to execute code on the main thread.
-    this->runThreaded(nThreads, nThreads - 1, printData);
-
-    // Wait for all the threads to finish.
-    for (auto &t: threads) {
-        t.join();
-    }
-
-    // Write elapsed time in the footer.
-    auto chronoStop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(chronoStop - chronoStart);
-    outFile << "# Elapsed time: " << duration.count() << " s";
 };

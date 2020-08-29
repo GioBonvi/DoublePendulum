@@ -1,10 +1,9 @@
 #ifndef UNIFORM_GRID
 #define UNIFORM_GRID
 
+#include <vector>
 #include <memory>
 #include <array>
-#include <functional>
-#include <mutex>
 #include "Fractal.hpp"
 
 /*
@@ -26,30 +25,22 @@ class UniformGrid {
         std::array<int, 2> imgSize;
         // Text output lines starting with this character will be interpreted as comments, not data.
         static const char textComment = '#';
-        // For thread safe output to a file.
-        std::mutex outFileMutex;
+        // Evaluated data.
+        std::vector<int> data;
 
         /*
-         * Loop over all the pixels and for each one calculate the fractal
-         * value, then evaluate f(col, row, stepCount).
-         * 
-         * This can be used to implement different output types (e.g. text
-         * dump of the data, build an in-memory image...)
-         */
-        void run(std::function<void(int col, int row, int stepCount)> f);
-        /*
-         * This is the same as run(), but only operates on a subset of pixels.
-         * 
-         * Each thread, thorugh the threadsNum and threadIndex arguments, is
+         * Each thread, through the threadsNum and threadIndex arguments, is
          * assigned a different, non-intersecting set of pixels to calculate
          * autonomously.
          */
-        void runThreaded(int threadsNum, int threadIndex, std::function<void(int col, int row, int stepCount)> f);
+        void calcThreaded(int threadsNum, int threadIndex);
 
     public:
         UniformGrid(std::shared_ptr<Fractal> fractal, int nStepMax,
                     double ai1Min, double ai1Max, double ai2Min, double ai2Max, double gridSize);
 
+        // Evaluate this->fractal->stepsToFlip() for each pixel of the grid.
+        void calcData(int forceThreadNum = 0);
         /*
          * Save the sampled data values in an ASCII file.
          * 
@@ -61,7 +52,7 @@ class UniformGrid {
          * of threads to be used. If it is 0 the number of threads is automatically
          * assigned to be std::thread::hardware_concurrency().
          */
-        void saveData(const std::string fileName, const std::string separator = "\t", int forceThreadNum = 0);
+        void saveData(const std::string fileName, const std::string separator = "\t");
 };
 
 #endif

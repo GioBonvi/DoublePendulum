@@ -68,10 +68,15 @@ int main(int argc, const char * argv[])
     dt = std::stof(argv[12]);
     nStepMax = std::stoi(argv[13]);
 
-    std::shared_ptr<Fractal> fractal = std::make_shared<Fractal> (
-        DoublePendulum::makeDoublePendulum(M1, M2, L1, L2, dt, g, pendulumType)
+    UniformGrid grid(
+        std::make_shared<Fractal> (
+            DoublePendulum::makeDoublePendulum(
+                M1, M2, L1, L2, dt, g, pendulumType
+            )
+        ),
+        nStepMax, ai1Min, ai1Max, ai2Min, ai2Max, gridSize
     );
-    UniformGrid grid(fractal, nStepMax, ai1Min, ai1Max, ai2Min, ai2Max, gridSize);
 
+    grid.calcData();
     grid.saveData(outFileName);
 }

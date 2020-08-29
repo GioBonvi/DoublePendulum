@@ -111,7 +111,7 @@ with open(args.input_file, "r") as f:
     # Lines starting with # are comments.
     for line in f.readlines():
         if line[0] != "#":
-            [r, c, v] = line.split(separator)
+            [c, r, v] = line.split(separator)
             row.append(int(r))
             col.append(int(c))
             value.append(int(v))
@@ -168,20 +168,23 @@ for i, (r, c, v) in enumerate(zip(row, col, value)):
     elif args.scale == "multilog":
         # Absolute logarithmic scale: base color is decided by the integer part of
         # log10(v / base_steps), tint by the decimal part.
-        color_i = log10(v / base_steps) + 1
-        if color_i < 0:
-            # No negative values.
-            color_i = 0
-        color_i = int(color_i * color_grad_subdivisions)
-
-        if color_i >= len(color_gradient):
+        if v == 0:
             color = color_outofscale
         else:
-            color = color_gradient[color_i]
+            color_i = log10(v / base_steps) + 1
+            if color_i < 0:
+                # No negative values.
+                color_i = 0
+            color_i = int(color_i * color_grad_subdivisions)
+
+            if color_i >= len(color_gradient):
+                color = color_outofscale
+            else:
+                color = color_gradient[color_i]
     new_pixel = colorDecimalTo254(color.get_rgb())
 
-    img.putpixel((r, col_len - 1 - c), new_pixel)
+    img.putpixel((c, r), new_pixel)
     if enable_symmetry:
         # Also place the pixel in the symmetric position.
-        img.putpixel((row_len - 1 - r, c), new_pixel)
+        img.putpixel((col_len - 1 - c, row_len - 1 - r), new_pixel)
 img.save(args.output_file)
